@@ -116,8 +116,9 @@ def intize(text:str):
                 + (ord(text[chunk*4+1]) << 8)  \
                 + (ord(text[chunk*4+0]))
         arr.append(value)
-        print("%x" % (value))
-    return np.array(arr).reshape(1, int(MAXPAL/4))
+    arr = np.array(arr).reshape(1, int(MAXPAL/4))
+    print(arr)
+    return(arr)
 
 
 def strize(value:int) -> str:
@@ -133,12 +134,12 @@ def strize(value:int) -> str:
 with tf.Session() as sess:
     tf.initialize_all_variables().run()
     print("Training on 10000 samples...")
-    for sample in range(1,1000):
+    for sample in range(1,10000):
         ispal = random.randint(0,1)
         text = gen_palindrome() if ispal else gen_nonpalindrome()
-        print(text)
         answer = [float(ispal), float(not ispal)]
         answer = np.array(answer).reshape(1,2)
+        print(text, answer)
         sess.run(train_op, feed_dict={nnInput : intize(text), nnOutput : answer})
     while True:
         maybe = input("Enter a string:")
