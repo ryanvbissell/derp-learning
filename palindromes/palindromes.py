@@ -87,7 +87,7 @@ nnOutput = tf.placeholder(tf.float32, [None, 2])
 def init_weights(shape):
     return tf.Variable(tf.random_normal(shape, stddev=0.01))
 
-HIDDEN1=10
+HIDDEN1=100
 wHidden1 = init_weights([MAXPAL, HIDDEN1])
 wOutput = init_weights([HIDDEN1, 2])
 
@@ -113,7 +113,7 @@ def intize(text:str):
     for i in range(MAXPAL):
         value = ord(text[i])
         arr.append(value)
-    arr = np.array(arr).reshape(1, MAXPAL)
+    #arr = np.array(arr).reshape(1, MAXPAL)
     #print(arr)
     return(arr)
 
@@ -130,22 +130,20 @@ with tf.Session() as sess:
     tInput = []
     tOutput = []
     print("Generating training data...")
-    for gen in range(256):
+    for gen in range(2048):
         ispal = random.randint(0,1)
         intized = intize(gen_palindrome() if ispal else gen_nonpalindrome())
         answer = [ispal, not ispal]
         tInput.append(intized)
         tOutput.append(answer)
 
-    print("Training on 16K samples...")
-    for epoch in range(1000):
+    print("Training...")
+    for epoch in range(10000):
         count = len(tInput)
-        #permute = np.random.permutation(range(count))
+        #p = np.random.permutation(range(count))
         #tInput, tOutput = tInput[p], tOutput[p]
-        print("Randomizing...")
         for i in range(count):
-            rnd = random.randint(0,count)
-            print(i, rnd)
+            rnd = random.randint(0,count-1)
             tInput[rnd], tInput[i] = tInput[i], tInput[rnd]
             tOutput[rnd], tOutput[i] = tOutput[i], tOutput[rnd]
 
@@ -153,7 +151,7 @@ with tf.Session() as sess:
             end = start + 128
             sess.run(train_op, feed_dict={nnInput: tInput[start:end], nnOutput: tOutput[start:end]})
 
-        print(epoch, np.mean(np.argmax(answer, axis=1) ==
+        print(epoch, np.mean(np.argmax(tOutput, axis=1) ==
                      sess.run(predict_op, feed_dict={nnInput : tInput, nnOutput : tOutput})))
 
     while True:
