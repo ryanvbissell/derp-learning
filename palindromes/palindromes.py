@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import string
+import random
 
 #import numpy as np
 #import tensorflow as tf
@@ -21,13 +22,21 @@ def declare(text: str):
     print("'%s' is %s palindrome" % (text, 'a' if is_palindrome(text) else 'not a'))
 
 
-
 declare("")
 declare("ryan")
 declare("maam")
 declare("i am ai")
 declare("a man a plan a canal panama")
 declare("'Reviled did I live,' said I, 'as evil I did deliver.'")
+
+
+def gen_nonpalindrome() -> str:
+    while True:
+        length = random.randint(1,4096)
+        text = ''.join(random.choice(alphabet + punctuation) for _ in range(length))
+        if not is_palindrome(text):
+            return text
+
 
 
 
