@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 
+print("Importing...")
 import string
 import random
 
-#import numpy as np
-#import tensorflow as tf
+import numpy as np
+import tensorflow as tf
+
+MAXPAL=128
 
 alphabet = string.ascii_lowercase
 punctuation = "'\",.; :?!"
@@ -40,7 +43,7 @@ def randstring(options:str, length:int) -> str:
 
 def gen_nonpalindrome() -> str:
     while True:
-        length = random.randint(1,200)
+        length = random.randint(1,MAXPAL-1)
         text = randstring(alphabet, length)
         if not is_palindrome(text):
             return text
@@ -56,7 +59,7 @@ def gen_palindrome() -> str:
         return text
     '''
     text = "" if 0 == random.randint(0,1) else randchar(alphabet)
-    count = random.randint(0,200)
+    count = random.randint(0,MAXPAL-1)
     while count > 1:
         '''
         if 0 == random.randint(0,15):
@@ -74,4 +77,74 @@ negative = gen_nonpalindrome();
 
 print("\n'%s' IS %s PALINDROME (expected %s)" % (positive, "A" if is_palindrome(positive) else "NOT A", "positive"))
 print("\n'%s' IS %s PALINDROME (expected %s)" % (negative, "A" if is_palindrome(negative) else "NOT A", "negative"))
+
+
+
+print("\n\n\nTensorflowing...")
+nnInput = tf.placeholder(tf.int32, [None, int(MAXPAL/4)])
+nnOutput = tf.placeholder(tf.float32, [None, 2])
+
+def init_weights(shape):
+    return tf.Variable(tf.random_normal(shape, stddev=0.01))
+
+HIDDEN1=10
+wHidden1 = init_weights([int(MAXPAL/4), HIDDEN1])
+wOutput = init_weights([HIDDEN1, 2])
+
+def model(X, wH, wO):
+    h = tf.nn.relu(tf.matmul(tf.cast(X,tf.float32), wH))
+    return tf.matmul(h, wO)
+
+
+py_x = model(nnInput, wHidden1, wOutput)
+cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=py_x, labels=nnOutput))
+train_op = tf.train.GradientDescentOptimizer(0.05).minimize(cost)
+
+predict_op = tf.argmax(py_x, 1)
+
+def nn_declare(prediction):
+    return ["NOT a", "a"][prediction]
+
+def intize(text:str):
+    arr = []
+    length = len(text)
+    for offset in range(length,MAXPAL):  # pad out before intizing
+        text += '\0'
+    for chunk in range(0,int(MAXPAL/4)):
+        value   = (ord(text[chunk*4+3]) << 24) \
+                + (ord(text[chunk*4+2]) << 16) \
+                + (ord(text[chunk*4+1]) << 8)  \
+                + (ord(text[chunk*4+0]))
+        arr.append(value)
+        print("%x" % (value))
+    return np.array(arr).reshape(1, int(MAXPAL/4))
+
+
+def strize(value:int) -> str:
+    text = ""
+    for i in range(0,int(MAXPAL/4-1)):
+        text += chr((value[i] >> 0)  & 0xFF)
+        text += chr((value[i] >> 8)  & 0xFF)
+        text += chr((value[i] >> 16) & 0xFF)
+        text += chr((value[i] >> 24) & 0xFF)
+    return text
+
+
+with tf.Session() as sess:
+    tf.initialize_all_variables().run()
+    print("Training on 10000 samples...")
+    for sample in range(1,1000):
+        ispal = random.randint(0,1)
+        text = gen_palindrome() if ispal else gen_nonpalindrome()
+        print(text)
+        answer = [float(ispal), float(not ispal)]
+        answer = np.array(answer).reshape(1,2)
+        sess.run(train_op, feed_dict={nnInput : intize(text), nnOutput : answer})
+    while True:
+        maybe = input("Enter a string:")
+        cooked = intize(maybe)
+        result = sess.run(predict_op, feed_dict={nnInput : cooked})
+        print(cooked)
+        print(result)
+        print("%s : %s" % ("YES" if result[0] else "NO", strize(cooked[0])))
 
