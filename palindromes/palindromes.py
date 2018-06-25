@@ -114,7 +114,7 @@ def intize(text:str):
         value = ord(text[i])
         arr.append(value)
     arr = np.array(arr).reshape(1, MAXPAL)
-    print(arr)
+    #print(arr)
     return(arr)
 
 
@@ -127,15 +127,35 @@ def strize(value:int) -> str:
 
 with tf.Session() as sess:
     tf.initialize_all_variables().run()
-    print("Training on 1000 samples...")
-    for sample in range(1,1000):
+    tInput = []
+    tOutput = []
+    print("Generating training data...")
+    for gen in range(256):
         ispal = random.randint(0,1)
-        text = gen_palindrome() if ispal else gen_nonpalindrome()
-        answer = [float(ispal), float(not ispal)]
-        answer = np.array(answer).reshape(1,2)
-        intized = intize(text)
-        sess.run(train_op, feed_dict={nnInput : intized, nnOutput : answer})
-        #print(text, answer, np.mean(np.argmax(answer, axis=1) == sess.run(predict_op, feed_dict={nnInput : intized, nnOutput : answer})))
+        intized = intize(gen_palindrome() if ispal else gen_nonpalindrome())
+        answer = [ispal, not ispal]
+        tInput.append(intized)
+        tOutput.append(answer)
+
+    print("Training on 16K samples...")
+    for epoch in range(1000):
+        count = len(tInput)
+        #permute = np.random.permutation(range(count))
+        #tInput, tOutput = tInput[p], tOutput[p]
+        print("Randomizing...")
+        for i in range(count):
+            rnd = random.randint(0,count)
+            print(i, rnd)
+            tInput[rnd], tInput[i] = tInput[i], tInput[rnd]
+            tOutput[rnd], tOutput[i] = tOutput[i], tOutput[rnd]
+
+        for start in range(0, len(tInput), 128):
+            end = start + 128
+            sess.run(train_op, feed_dict={nnInput: tInput[start:end], nnOutput: tOutput[start:end]})
+
+        print(epoch, np.mean(np.argmax(answer, axis=1) ==
+                     sess.run(predict_op, feed_dict={nnInput : tInput, nnOutput : tOutput})))
+
     while True:
         maybe = input("Enter a string:")
         cooked = intize(maybe)
