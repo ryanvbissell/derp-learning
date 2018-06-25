@@ -7,7 +7,7 @@ import random
 import numpy as np
 import tensorflow as tf
 
-MAXPAL=128
+MAXPAL=64
 
 alphabet = string.ascii_lowercase
 punctuation = "'\",.; :?!"
@@ -87,16 +87,25 @@ nnOutput = tf.placeholder(tf.float32, [None, 2])
 def init_weights(shape):
     return tf.Variable(tf.random_normal(shape, stddev=0.01))
 
-HIDDEN1=100
+HIDDEN1=64
+HIDDEN2=32
+HIDDEN3=16
+HIDDEN4=8
 wHidden1 = init_weights([MAXPAL, HIDDEN1])
-wOutput = init_weights([HIDDEN1, 2])
+wHidden2 = init_weights([HIDDEN1, HIDDEN2])
+wHidden3 = init_weights([HIDDEN2, HIDDEN3])
+wHidden4 = init_weights([HIDDEN3, HIDDEN4])
+wOutput = init_weights([HIDDEN4, 2])
 
-def model(X, wH, wO):
-    h = tf.nn.relu(tf.matmul(tf.cast(X,tf.float32), wH))
+def model(X, wH1, wH2, wH3, wH4, wO):
+    h = tf.nn.relu(tf.matmul(tf.cast(X,tf.float32), wH1))
+    h = tf.nn.relu(tf.matmul(h, wH2))
+    h = tf.nn.relu(tf.matmul(h, wH3))
+    h = tf.nn.relu(tf.matmul(h, wH4))
     return tf.matmul(h, wO)
 
 
-py_x = model(nnInput, wHidden1, wOutput)
+py_x = model(nnInput, wHidden1, wHidden2, wHidden3, wHidden4, wOutput)
 cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=py_x, labels=nnOutput))
 train_op = tf.train.GradientDescentOptimizer(0.05).minimize(cost)
 
@@ -124,21 +133,22 @@ def strize(value:int) -> str:
         text += chr(value[i])
     return text
 
-
-with tf.Session() as sess:
+#with tf.Session() as sess:
+gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction = .20)
+with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options)) as sess:
     tf.initialize_all_variables().run()
     tInput = []
     tOutput = []
     print("Generating training data...")
-    for gen in range(2048):
+    for gen in range(4096):
         ispal = random.randint(0,1)
         intized = intize(gen_palindrome() if ispal else gen_nonpalindrome())
-        answer = [ispal, not ispal]
+        answer = [ispal, int(not ispal)]
         tInput.append(intized)
         tOutput.append(answer)
 
     print("Training...")
-    for epoch in range(10000):
+    for epoch in range(32*32):
         count = len(tInput)
         #p = np.random.permutation(range(count))
         #tInput, tOutput = tInput[p], tOutput[p]
@@ -151,12 +161,22 @@ with tf.Session() as sess:
             end = start + 128
             sess.run(train_op, feed_dict={nnInput: tInput[start:end], nnOutput: tOutput[start:end]})
 
-        print(epoch, np.mean(np.argmax(tOutput, axis=1) ==
-                     sess.run(predict_op, feed_dict={nnInput : tInput, nnOutput : tOutput})))
+        #print("vvv")
+        #print(np.argmax(tOutput, axis=1))
+        #print(tInput[0])
+        #print(tInput[1])
+        score = np.mean(np.argmax(tOutput, axis=1) == sess.run(predict_op, feed_dict={nnInput : tInput, nnOutput : tOutput}))
+        print(epoch, score)
+        if score >= 0.95:
+            break
+        #print(epoch, np.mean(np.argmax(tOutput, axis=1) ==
+        #             sess.run(predict_op, feed_dict={nnInput : tInput, nnOutput : tOutput})))
+        #print("^^^")
 
     while True:
         maybe = input("Enter a string:")
         cooked = intize(maybe)
+        cooked = np.array(cooked).reshape(1, MAXPAL)
         result = sess.run(predict_op, feed_dict={nnInput : cooked})
         print(cooked)
         print(result)
