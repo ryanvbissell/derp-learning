@@ -170,27 +170,24 @@ with tf.Session() as sess:
             end = start + 128
             sess.run(train_op, feed_dict={nnInput: tInput[start:end], nnOutput: tOutput[start:end]})
 
-        #print("vvv")
-        #print(np.argmax(tOutput, axis=1))
-        #print(tInput[0])
-        #print(tInput[1])
         tscore = sess.run(predict_op, feed_dict={nnInput : test})[0]
         score = np.mean(np.argmax(tOutput, axis=1) == sess.run(predict_op, feed_dict={nnInput : tInput, nnOutput : tOutput}))
         print(epoch, score, tscore)
         if score >= 0.95:
             break
-        #print(epoch, np.mean(np.argmax(tOutput, axis=1) ==
-        #             sess.run(predict_op, feed_dict={nnInput : tInput, nnOutput : tOutput})))
-        #print("^^^")
 
     while True:
         maybe = input("Enter a string: ")
         cleaned = cleanup(maybe)
+        if len(cleaned) > 40:
+            print("?? I can only handle %d alphabet characters.  Try again.\n" % MAXPAL)
+            continue
         cooked = intize(cleaned)
         cooked = np.array(cooked).reshape(1, MAXPAL)
         result = sess.run(predict_op, feed_dict={nnInput : cooked})
-        print(cooked)
-        print(result)
-        print("%s : %s" % ("YES" if (result[0] == 1) else "NO", strize(cooked[0])))
+        #print(cooked)
+        #print(result)
+        print("%s" % ("PALINDROME!" if (result[0] == 0) else "nope."))
+        #print("%s : %s" % ("YES" if (result[0] == 1) else "NO", strize(cooked[0])))
 
 
