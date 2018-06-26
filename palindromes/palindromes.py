@@ -163,8 +163,9 @@ with tf.Session() as sess:
             tInput[rnd], tInput[i] = tInput[i], tInput[rnd]
             tOutput[rnd], tOutput[i] = tOutput[i], tOutput[rnd]
 
-        for start in range(0, len(tInput), 128):
-            end = start + 128
+        BATCHSIZE=128
+        for start in range(0, len(tInput), BATCHSIZE):
+            end = start + BATCHSIZE
             sess.run(train_op, feed_dict={nnInput: tInput[start:end], nnOutput: tOutput[start:end]})
 
         tscore = sess.run(predict_op, feed_dict={nnInput : test})[0]
