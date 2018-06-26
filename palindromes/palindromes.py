@@ -146,7 +146,7 @@ with tf.Session() as sess:
     tInput = []
     tOutput = []
     print("Generating training data...")
-    for gen in range(2048):
+    for gen in range(4096):
         ispal = random.randint(0,1)
         intized = intize(gen_palindrome() if ispal else gen_nonpalindrome())
         answer = [ispal, int(not ispal)]
@@ -170,7 +170,7 @@ with tf.Session() as sess:
         tscore = sess.run(predict_op, feed_dict={nnInput : test})[0]
         score = np.mean(np.argmax(tOutput, axis=1) == sess.run(predict_op, feed_dict={nnInput : tInput, nnOutput : tOutput}))
         print(epoch, score, tscore)
-        if score >= 0.95:
+        if score >= 0.98:
             break
 
     while True:
