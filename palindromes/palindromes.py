@@ -7,10 +7,14 @@ import random
 import numpy as np
 import tensorflow as tf
 
-MAXPAL=64
+MAXPAL=40
 
 alphabet = string.ascii_lowercase
 punctuation = "'\",.; :?!"
+
+def cleanup(text: str) -> str:
+    cleaned = text.translate({ord(c): None for c in punctuation})
+    return cleaned.lower()
 
 def is_palindrome(text: str) -> bool:
     def _checkpal(text: str) -> bool:
@@ -30,7 +34,7 @@ declare("ryan")
 declare("maam")
 declare("i am ai")
 declare("a man a plan a canal panama")
-declare("'Reviled did I live,' said I, 'as evil I did deliver.'")
+#declare("'Reviled did I live,' said I, 'as evil I did deliver.'")
 
 
 def randchar(options:str) -> str:
@@ -81,8 +85,8 @@ print("\n'%s' IS %s PALINDROME (expected %s)" % (negative, "A" if is_palindrome(
 
 
 print("\n\n\nTensorflowing...")
-nnInput = tf.placeholder(tf.int32, [None, MAXPAL])
-nnOutput = tf.placeholder(tf.float32, [None, 2])
+nnInput = tf.placeholder(tf.int64, [None, MAXPAL])
+nnOutput = tf.placeholder(tf.float64, [None, 2])
 
 def init_weights(shape):
     return tf.Variable(tf.random_normal(shape, stddev=0.01))
@@ -133,14 +137,19 @@ def strize(value:int) -> str:
         text += chr(value[i])
     return text
 
-#with tf.Session() as sess:
-gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction = .20)
-with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options)) as sess:
+test = cleanup("'Reviled did I live,' said I, 'as evil I did deliver.'")
+print(test)
+test = intize(test)
+test = np.array(test).reshape(1, MAXPAL)
+
+with tf.Session() as sess:
+#gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction = .20)
+#with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options)) as sess:
     tf.initialize_all_variables().run()
     tInput = []
     tOutput = []
     print("Generating training data...")
-    for gen in range(4096):
+    for gen in range(2048):
         ispal = random.randint(0,1)
         intized = intize(gen_palindrome() if ispal else gen_nonpalindrome())
         answer = [ispal, int(not ispal)]
@@ -148,7 +157,7 @@ with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options)) as sess:
         tOutput.append(answer)
 
     print("Training...")
-    for epoch in range(32*32):
+    for epoch in range(8192):
         count = len(tInput)
         #p = np.random.permutation(range(count))
         #tInput, tOutput = tInput[p], tOutput[p]
@@ -165,8 +174,9 @@ with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options)) as sess:
         #print(np.argmax(tOutput, axis=1))
         #print(tInput[0])
         #print(tInput[1])
+        tscore = sess.run(predict_op, feed_dict={nnInput : test})[0]
         score = np.mean(np.argmax(tOutput, axis=1) == sess.run(predict_op, feed_dict={nnInput : tInput, nnOutput : tOutput}))
-        print(epoch, score)
+        print(epoch, score, tscore)
         if score >= 0.95:
             break
         #print(epoch, np.mean(np.argmax(tOutput, axis=1) ==
@@ -174,11 +184,13 @@ with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options)) as sess:
         #print("^^^")
 
     while True:
-        maybe = input("Enter a string:")
-        cooked = intize(maybe)
+        maybe = input("Enter a string: ")
+        cleaned = cleanup(maybe)
+        cooked = intize(cleaned)
         cooked = np.array(cooked).reshape(1, MAXPAL)
         result = sess.run(predict_op, feed_dict={nnInput : cooked})
         print(cooked)
         print(result)
-        print("%s : %s" % ("YES" if result[0] else "NO", strize(cooked[0])))
+        print("%s : %s" % ("YES" if (result[0] == 1) else "NO", strize(cooked[0])))
+
 
