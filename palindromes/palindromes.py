@@ -34,7 +34,6 @@ declare("ryan")
 declare("maam")
 declare("i am ai")
 declare("a man a plan a canal panama")
-#declare("'Reviled did I live,' said I, 'as evil I did deliver.'")
 
 
 def randchar(options:str) -> str:
@@ -126,8 +125,6 @@ def intize(text:str):
     for i in range(MAXPAL):
         value = ord(text[i])
         arr.append(value)
-    #arr = np.array(arr).reshape(1, MAXPAL)
-    #print(arr)
     return(arr)
 
 
@@ -185,8 +182,6 @@ with tf.Session() as sess:
         cooked = intize(cleaned)
         cooked = np.array(cooked).reshape(1, MAXPAL)
         result = sess.run(predict_op, feed_dict={nnInput : cooked})
-        #print(cooked)
-        #print(result)
         print("%s" % ("PALINDROME!" if (result[0] == 0) else "nope."))
         #print("%s : %s" % ("YES" if (result[0] == 1) else "NO", strize(cooked[0])))
 
