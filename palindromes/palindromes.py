@@ -16,24 +16,15 @@ def cleanup(text: str) -> str:
     cleaned = text.translate({ord(c): None for c in punctuation})
     return cleaned.lower()
 
+
 def is_palindrome(text: str) -> bool:
     def _checkpal(text: str) -> bool:
         numchars = len(text)
         if numchars <= 1:
             return True
         return (text[0] == text[numchars-1]) and _checkpal(text[1:numchars-1])
-    cleaned = text.translate({ord(c): None for c in punctuation})
-    return _checkpal(cleaned.lower())
-
-def declare(text: str):
-    print("'%s' is %s palindrome" % (text, 'a' if is_palindrome(text) else 'not a'))
-
-
-declare("")
-declare("ryan")
-declare("maam")
-declare("i am ai")
-declare("a man a plan a canal panama")
+    cleaned = cleanup(text)
+    return _checkpal(cleaned)
 
 
 def randchar(options:str) -> str:
@@ -41,8 +32,10 @@ def randchar(options:str) -> str:
     choice = random.randint(0,length-1)
     return options[choice]
 
+
 def randstring(options:str, length:int) -> str:
     return ''.join(random.choice(options) for _ in range(length))
+
 
 def gen_nonpalindrome() -> str:
     while True:
@@ -51,36 +44,16 @@ def gen_nonpalindrome() -> str:
         if not is_palindrome(text):
             return text
 
+
 def gen_palindrome() -> str:
-    '''
-    def _punctuate(text:str) -> str:
-        punct = randchar(punctuation)
-        if 1 == random.randint(0,1):
-            text += punct
-        else:
-            text = punct + text
-        return text
-    '''
     text = "" if 0 == random.randint(0,1) else randchar(alphabet)
     count = random.randint(0,MAXPAL)
     while count > 1:
-        '''
-        if 0 == random.randint(0,15):
-            text = _punctuate(text)
-            count -= 1
-        '''
         if count > 1:
             char = randchar(alphabet)
             text = char + text + char
             count -= 2
     return text
-
-positive = gen_palindrome();
-negative = gen_nonpalindrome();
-
-print("\n'%s' IS %s PALINDROME (expected %s)" % (positive, "A" if is_palindrome(positive) else "NOT A", "positive"))
-print("\n'%s' IS %s PALINDROME (expected %s)" % (negative, "A" if is_palindrome(negative) else "NOT A", "negative"))
-
 
 
 print("\n\n\nTensorflowing...")
@@ -114,9 +87,6 @@ train_op = tf.train.GradientDescentOptimizer(0.02).minimize(cost)
 
 predict_op = tf.argmax(py_x, 1)
 
-def nn_declare(prediction):
-    return ["NOT a", "a"][prediction]
-
 def intize(text:str):
     arr = []
     length = len(text)
@@ -133,6 +103,8 @@ def strize(value:int) -> str:
     for i in range(0,MAXPAL-1):
         text += chr(value[i])
     return text
+
+
 
 test = cleanup("'Reviled did I live,' said I, 'as evil I did deliver.'")
 print(test)
@@ -171,7 +143,7 @@ with tf.Session() as sess:
         tscore = sess.run(predict_op, feed_dict={nnInput : test})[0]
         score = np.mean(np.argmax(tOutput, axis=1) == sess.run(predict_op, feed_dict={nnInput : tInput, nnOutput : tOutput}))
         print(epoch, score, tscore)
-        if score >= 0.99:
+        if score >= 0.995:
             break
 
     while True:
@@ -183,7 +155,6 @@ with tf.Session() as sess:
         cooked = intize(cleaned)
         cooked = np.array(cooked).reshape(1, MAXPAL)
         result = sess.run(predict_op, feed_dict={nnInput : cooked})
-        print("%s" % ("PALINDROME!" if (result[0] == 0) else "nope."))
-        #print("%s : %s" % ("YES" if (result[0] == 1) else "NO", strize(cooked[0])))
+        print("%s" % ("PALINDROME!" if (result[0] == 0) else "nope.")) # XXX opposite of expected polarity
 
 
