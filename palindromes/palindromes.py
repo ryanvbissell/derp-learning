@@ -110,7 +110,7 @@ def model(X, wH1, wH2, wH3, wH4, wO):
 
 py_x = model(nnInput, wHidden1, wHidden2, wHidden3, wHidden4, wOutput)
 cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=py_x, labels=nnOutput))
-train_op = tf.train.GradientDescentOptimizer(0.05).minimize(cost)
+train_op = tf.train.GradientDescentOptimizer(0.02).minimize(cost)
 
 predict_op = tf.argmax(py_x, 1)
 
@@ -146,7 +146,7 @@ with tf.Session() as sess:
     tInput = []
     tOutput = []
     print("Generating training data...")
-    for gen in range(4096):
+    for _ in range(16384):
         ispal = random.randint(0,1)
         intized = intize(gen_palindrome() if ispal else gen_nonpalindrome())
         answer = [ispal, int(not ispal)]
@@ -154,7 +154,7 @@ with tf.Session() as sess:
         tOutput.append(answer)
 
     print("Training...")
-    for epoch in range(8192):
+    for epoch in range(16384):
         count = len(tInput)
         #p = np.random.permutation(range(count))
         #tInput, tOutput = tInput[p], tOutput[p]
@@ -163,7 +163,7 @@ with tf.Session() as sess:
             tInput[rnd], tInput[i] = tInput[i], tInput[rnd]
             tOutput[rnd], tOutput[i] = tOutput[i], tOutput[rnd]
 
-        BATCHSIZE=128
+        BATCHSIZE=256
         for start in range(0, len(tInput), BATCHSIZE):
             end = start + BATCHSIZE
             sess.run(train_op, feed_dict={nnInput: tInput[start:end], nnOutput: tOutput[start:end]})
@@ -171,7 +171,7 @@ with tf.Session() as sess:
         tscore = sess.run(predict_op, feed_dict={nnInput : test})[0]
         score = np.mean(np.argmax(tOutput, axis=1) == sess.run(predict_op, feed_dict={nnInput : tInput, nnOutput : tOutput}))
         print(epoch, score, tscore)
-        if score >= 0.98:
+        if score >= 0.99:
             break
 
     while True:
